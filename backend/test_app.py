@@ -46,6 +46,25 @@ class ChatApiTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_cors_safelisted_text_request(self):
+        response = self.client.post(
+            "/api/chat",
+            data=(
+                '{"message":"记忆模块有什么作用？",'
+                '"session_id":"simple_cors_session_001"}'
+            ),
+            content_type="text/plain;charset=UTF-8",
+            headers={"Origin": "https://hedyyaokuo.github.io"},
+        )
+        payload = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["query_family"], "memory")
+        self.assertEqual(
+            response.headers["Access-Control-Allow-Origin"],
+            "https://hedyyaokuo.github.io",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

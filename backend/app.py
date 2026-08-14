@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 import time
@@ -47,6 +48,15 @@ def _serialise_source(document: dict) -> dict:
     }
 
 
+def _read_payload() -> dict:
+    if request.is_json:
+        return request.get_json(silent=True) or {}
+    try:
+        return json.loads(request.get_data(as_text=True) or "{}")
+    except json.JSONDecodeError:
+        return {}
+
+
 @app.get("/api/health")
 def health():
     return jsonify({
@@ -62,7 +72,7 @@ def chat():
     if _rate_limited(client_id.split(",")[0].strip()):
         return jsonify({"ok": False, "error": "请求过于频繁，请稍后再试。"}), 429
 
-    payload = request.get_json(silent=True) or {}
+    payload = _read_payload()
     message = str(payload.get("message", "")).strip()
     session_id = str(payload.get("session_id", "public-session")).strip()
 

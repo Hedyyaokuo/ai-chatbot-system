@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: yixin-ai-chatbot-api
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT app:app
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: LLM_MODEL
+        value: openai/gpt-oss-20b
+      - key: ALLOWED_ORIGINS
+        value: https://hedyyaokuo.github.io,http://127.0.0.1:8000,http://localhost:8000,http://127.0.0.1:5500,http://localhost:5500

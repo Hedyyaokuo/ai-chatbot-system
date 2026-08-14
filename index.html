@@ -8,7 +8,7 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span>AI</span><div><p>LangGraph + ChromaDB + Ollama</p><h1>个性化多模态智能体聊天系统</h1></div></div>
+    <div class="brand"><span>AI</span><div><p>LangGraph + Cloud RAG</p><h1>个性化多模态智能体聊天系统</h1></div></div>
     <nav><a href="#evaluation">Evaluation</a><a href="#chat">Chat</a><a href="#workflow">Workflow</a></nav>
   </header>
 
@@ -16,12 +16,13 @@
     <section class="hero">
       <div>
         <p class="eyebrow">Personalised Multimodal Agent</p>
-        <h2>展示 evaluation，并提供可连接本地 API 的聊天界面。</h2>
-        <p>GitHub Pages 负责公开展示前端；真实 LangGraph/Ollama 智能体需要本地运行 `python app.py`，或部署到公网 Python 后端。</p>
+        <h2>展示 evaluation，并连接可公开访问的云端智能体。</h2>
+        <p>GitHub Pages 提供前端，Render 运行 LangGraph API，云端模型结合项目知识库完成检索增强问答。</p>
         <div class="actions"><a class="button primary" href="#chat">开始聊天</a><a class="button" href="#evaluation">查看评估</a></div>
       </div>
       <aside class="panel">
-        <div><span>默认 API</span><strong>http://127.0.0.1:5000/api/chat</strong></div>
+        <div><span>服务状态</span><strong id="apiStatus">正在连接</strong></div>
+        <div><span>公网 API</span><strong id="apiEndpoint">正在读取</strong></div>
         <div><span>检索方式</span><strong>Text / Image / Hybrid / Agentic RAG</strong></div>
         <div><span>评估指标</span><strong>Top-3 Hit Rate + LLM-as-Judge</strong></div>
       </aside>
@@ -68,7 +69,7 @@
     </section>
   </main>
 
-  <footer>公开展示版：前端可上 GitHub Pages，真实聊天能力需要本地或公网后端 API。</footer>
+  <footer>完整公开版：GitHub Pages 前端 + Render LangGraph API + 云端生成模型。</footer>
   <script src="assets/app.js"></script>
 </body>
 </html>

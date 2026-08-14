@@ -1,11 +1,206 @@
-const retrievalTable=document.getElementById("retrievalTable");const bestRetrieval=document.getElementById("bestRetrieval");const bestMethod=document.getElementById("bestMethod");const judgeAverage=document.getElementById("judgeAverage");const messages=document.getElementById("messages");const chatForm=document.getElementById("chatForm");const chatInput=document.getElementById("chatInput");const CHAT_API_URL=localStorage.getItem("CHAT_API_URL")||"http://127.0.0.1:5000/api/chat";
-function parseCsv(text){const rows=[];let cell="",row=[],quoted=false;for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];if(c==='"'&&quoted&&n==='"'){cell+='"';i++}else if(c==='"'){quoted=!quoted}else if(c===","&&!quoted){row.push(cell);cell=""}else if((c==="\n"||c==="\r")&&!quoted){if(c==="\r"&&n==="\n")i++;row.push(cell);if(row.some(v=>v.trim()!==""))rows.push(row);row=[];cell=""}else cell+=c}if(cell||row.length){row.push(cell);rows.push(row)}const[headers,...dataRows]=rows;return dataRows.map(r=>{const item={};headers.forEach((h,i)=>item[h]=r[i]||"");return item})}
-async function loadRetrievalSummary(){const res=await fetch("data/multimodal_retrieval_summary.csv");const rows=parseCsv(await res.text());let best=rows[0];retrievalTable.innerHTML=rows.map(r=>{const hit=Number(r.top3_hit_rate),lat=Number(r.average_latency);if(hit>Number(best.top3_hit_rate))best=r;return`<tr><td>${r.method}</td><td>${(hit*100).toFixed(1)}%</td><td>${lat.toFixed(2)}s</td></tr>`}).join("");bestRetrieval.textContent=`${(Number(best.top3_hit_rate)*100).toFixed(0)}%`;bestMethod.textContent=best.method.replace(" Retrieval","")}
-async function loadJudgeScores(){const res=await fetch("data/llm_judge_scores.csv");const rows=parseCsv(await res.text());const scores=rows.map(r=>Number(r.average_quality_score)).filter(Number.isFinite);judgeAverage.textContent=(scores.reduce((s,v)=>s+v,0)/scores.length).toFixed(2)}
-function esc(v){return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
-function formatSources(sources=[]){if(!sources.length)return"";const items=sources.slice(0,4).map(s=>`<li>${esc(s.source_file||"unknown")} <span>${esc(s.modality||"unknown")}</span></li>`).join("");return`<details class="sources"><summary>查看检索来源</summary><ul>${items}</ul></details>`}
-function addMessage(role,text,opt={}){const el=document.createElement("div");el.className=`message ${role}`;const label=role==="user"?"你":opt.live?"本地智能体":"智能体演示";el.innerHTML=`<small>${label}</small><div>${esc(text).replaceAll("\n","<br>")}</div>${formatSources(opt.sources)}`;messages.appendChild(el);messages.scrollTop=messages.scrollHeight}
-function demoReply(q){const l=q.toLowerCase();if(l.includes("eventnow")||q.includes("组织者"))return"EventNow 相关材料用于测试事实检索和项目问答。组织者可以创建活动、管理场次、审批报名、查看容量，并维护活动资料。";if(l.includes("hybrid")||q.includes("混合")||q.includes("text-only"))return"Hybrid Retrieval 同时使用文本块、图像描述和真实图像向量，因此跨模态覆盖更完整。本项目摘要中 Hybrid Retrieval 的 Top-3 Hit Rate 达到 80%。";if(q.includes("记忆")||l.includes("memory"))return"记忆模块会记录最近话题、用户兴趣和对话焦点，再把模糊追问改写成更完整的查询。";if(q.includes("失败")||q.includes("局限")||l.includes("failure"))return"主要失败案例包括检索漂移、偏好漂移、长期偏好和最近上下文冲突，以及轻量路由在主观问题上选错工具。";return"这是公开前端演示版。我可以回答 Evaluation、Hybrid RAG、Agentic RAG、对话记忆和失败案例相关问题。真实回答需要运行本地 API。"}
-async function askLocalAgent(prompt){const res=await fetch(CHAT_API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:prompt})});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"本地聊天 API 调用失败");return data}
-async function handlePrompt(prompt){addMessage("user",prompt);chatInput.disabled=true;addMessage("bot","正在调用本地 LangGraph/Ollama 智能体，请稍等...",{live:true});try{const data=await askLocalAgent(prompt);messages.lastElementChild.remove();addMessage("bot",data.answer||"本地智能体没有返回答案。",{live:true,sources:data.sources||[]});console.log("[Agent trace]",data.trace)}catch(e){messages.lastElementChild.remove();addMessage("bot",`${demoReply(prompt)}\n\n提示：当前没有连接到本地 API。请先运行 python app.py，或设置公网 CHAT_API_URL。`);console.warn(e)}finally{chatInput.disabled=false;chatInput.focus()}}
-chatForm.addEventListener("submit",e=>{e.preventDefault();const v=chatInput.value.trim();if(!v)return;chatInput.value="";handlePrompt(v)});document.querySelectorAll("[data-prompt]").forEach(b=>b.addEventListener("click",()=>handlePrompt(b.dataset.prompt)));addMessage("bot",`你好，我会默认调用：${CHAT_API_URL}。如果 API 没启动，我会自动切换到演示回复。`);loadRetrievalSummary().catch(()=>retrievalTable.innerHTML='<tr><td colspan="3">评估摘要加载失败。</td></tr>');loadJudgeScores().catch(()=>judgeAverage.textContent="--");
+const retrievalTable = document.getElementById("retrievalTable");
+const bestRetrieval = document.getElementById("bestRetrieval");
+const bestMethod = document.getElementById("bestMethod");
+const judgeAverage = document.getElementById("judgeAverage");
+const messages = document.getElementById("messages");
+const chatForm = document.getElementById("chatForm");
+const chatInput = document.getElementById("chatInput");
+const apiStatus = document.getElementById("apiStatus");
+const apiEndpoint = document.getElementById("apiEndpoint");
+
+const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
+const DEFAULT_CHAT_API_URL = LOCAL_HOSTS.has(globalThis.location.hostname)
+  ? "http://127.0.0.1:5000/api/chat"
+  : "https://yixin-ai-chatbot-api.onrender.com/api/chat";
+const CHAT_API_URL = localStorage.getItem("CHAT_API_URL") || DEFAULT_CHAT_API_URL;
+const HEALTH_API_URL = CHAT_API_URL.replace(/\/api\/chat\/?$/, "/api/health");
+const SESSION_ID = getSessionId();
+
+function getSessionId() {
+  const saved = localStorage.getItem("CHAT_SESSION_ID");
+  if (saved) return saved;
+  const generated = globalThis.crypto?.randomUUID?.().replaceAll("-", "")
+    || `session_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  localStorage.setItem("CHAT_SESSION_ID", generated);
+  return generated;
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let cell = "";
+  let row = [];
+  let quoted = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const current = text[index];
+    const next = text[index + 1];
+    if (current === '"' && quoted && next === '"') {
+      cell += '"';
+      index += 1;
+    } else if (current === '"') {
+      quoted = !quoted;
+    } else if (current === "," && !quoted) {
+      row.push(cell);
+      cell = "";
+    } else if ((current === "\n" || current === "\r") && !quoted) {
+      if (current === "\r" && next === "\n") index += 1;
+      row.push(cell);
+      if (row.some((value) => value.trim() !== "")) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += current;
+    }
+  }
+  if (cell || row.length) {
+    row.push(cell);
+    rows.push(row);
+  }
+  const [headers, ...dataRows] = rows;
+  return dataRows.map((dataRow) => {
+    const item = {};
+    headers.forEach((header, index) => {
+      item[header] = dataRow[index] || "";
+    });
+    return item;
+  });
+}
+
+async function loadRetrievalSummary() {
+  const response = await fetch("data/multimodal_retrieval_summary.csv");
+  const rows = parseCsv(await response.text());
+  let best = rows[0];
+  retrievalTable.innerHTML = rows.map((row) => {
+    const hitRate = Number(row.top3_hit_rate);
+    const latency = Number(row.average_latency);
+    if (hitRate > Number(best.top3_hit_rate)) best = row;
+    return `<tr><td>${row.method}</td><td>${(hitRate * 100).toFixed(1)}%</td><td>${latency.toFixed(2)}s</td></tr>`;
+  }).join("");
+  bestRetrieval.textContent = `${(Number(best.top3_hit_rate) * 100).toFixed(0)}%`;
+  bestMethod.textContent = best.method.replace(" Retrieval", "");
+}
+
+async function loadJudgeScores() {
+  const response = await fetch("data/llm_judge_scores.csv");
+  const rows = parseCsv(await response.text());
+  const scores = rows
+    .map((row) => Number(row.average_quality_score))
+    .filter(Number.isFinite);
+  judgeAverage.textContent = (
+    scores.reduce((sum, value) => sum + value, 0) / scores.length
+  ).toFixed(2);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function formatSources(sources = []) {
+  if (!sources.length) return "";
+  const items = sources.slice(0, 5).map((source) => (
+    `<li>${escapeHtml(source.source_file || "项目知识库")}`
+    + ` <span>${escapeHtml(source.section || source.modality || "text")}</span></li>`
+  )).join("");
+  return `<details class="sources"><summary>查看检索来源</summary><ul>${items}</ul></details>`;
+}
+
+function addMessage(role, text, options = {}) {
+  const element = document.createElement("div");
+  element.className = `message ${role}`;
+  const label = role === "user" ? "你" : options.pending ? "智能体正在思考" : "云端智能体";
+  element.innerHTML = `<small>${label}</small><div>${escapeHtml(text).replaceAll("\n", "<br>")}</div>${formatSources(options.sources)}`;
+  messages.appendChild(element);
+  messages.scrollTop = messages.scrollHeight;
+  return element;
+}
+
+async function fetchWithTimeout(url, options, timeout = 90000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function askAgent(prompt) {
+  const response = await fetchWithTimeout(CHAT_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: prompt, session_id: SESSION_ID }),
+  });
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    throw new Error(data.error || "公网聊天 API 调用失败");
+  }
+  return data;
+}
+
+async function checkApiStatus() {
+  apiEndpoint.textContent = new URL(CHAT_API_URL).host;
+  apiStatus.textContent = "正在连接";
+  try {
+    const response = await fetchWithTimeout(HEALTH_API_URL, {}, 70000);
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error("服务未就绪");
+    apiStatus.textContent = data.mode === "groq" ? "在线 · 云端模型" : "在线 · 检索模式";
+  } catch (error) {
+    apiStatus.textContent = "正在唤醒服务";
+    console.warn(error);
+  }
+}
+
+async function handlePrompt(prompt) {
+  addMessage("user", prompt);
+  chatInput.disabled = true;
+  const pending = addMessage(
+    "bot",
+    "正在执行记忆读取、查询路由、知识检索和答案验证，请稍等……",
+    { pending: true },
+  );
+  try {
+    const data = await askAgent(prompt);
+    pending.remove();
+    addMessage("bot", data.answer || "智能体没有返回答案。", {
+      sources: data.sources || [],
+    });
+    apiStatus.textContent = "在线 · 云端模型";
+    console.info("Agent trace", data.trace);
+  } catch (error) {
+    pending.remove();
+    addMessage(
+      "bot",
+      `暂时无法连接云端智能体：${error.message}\n\n免费服务在闲置后首次唤醒可能需要约一分钟，请稍后重新发送。`,
+    );
+    apiStatus.textContent = "连接异常";
+  } finally {
+    chatInput.disabled = false;
+    chatInput.focus();
+  }
+}
+
+chatForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const value = chatInput.value.trim();
+  if (!value) return;
+  chatInput.value = "";
+  handlePrompt(value);
+});
+
+document.querySelectorAll("[data-prompt]").forEach((button) => {
+  button.addEventListener("click", () => handlePrompt(button.dataset.prompt));
+});
+
+addMessage("bot", "你好，我是这个项目的云端智能体。你可以询问系统架构、评估结果、检索策略、记忆模块和 EventNow。", {});
+checkApiStatus();
+loadRetrievalSummary().catch(() => {
+  retrievalTable.innerHTML = '<tr><td colspan="3">评估摘要加载失败。</td></tr>';
+});
+loadJudgeScores().catch(() => {
+  judgeAverage.textContent = "--";
+});

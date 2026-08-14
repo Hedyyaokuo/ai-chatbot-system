@@ -1,0 +1,11 @@
+{
+  "records": 1813,
+  "text_chunks": 1786,
+  "image_captions": 27,
+  "true_image_links": 10,
+  "source_files": 39,
+  "chunk_size": 650,
+  "chunk_overlap": 100,
+  "source_collection": "personalised_multimodal_knowledge_base",
+  "true_image_collection": "eventnow_true_image_index"
+}

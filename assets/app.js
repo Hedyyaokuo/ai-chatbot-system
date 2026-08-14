@@ -101,10 +101,11 @@ function escapeHtml(value) {
 
 function formatSources(sources = []) {
   if (!sources.length) return "";
-  const items = sources.slice(0, 5).map((source) => (
-    `<li>${escapeHtml(source.source_file || "项目知识库")}`
-    + ` <span>${escapeHtml(source.section || source.modality || "text")}</span></li>`
-  )).join("");
+  const items = sources.slice(0, 5).map((source) => {
+    const location = source.page_label ? `第 ${source.page_label} 页` : source.modality || "text";
+    return `<li>${escapeHtml(source.source_file || "原始知识库")}`
+      + ` <span>${escapeHtml(location)} · chunk ${escapeHtml(source.chunk_id ?? "-")}</span></li>`;
+  }).join("");
   return `<details class="sources"><summary>查看检索来源</summary><ul>${items}</ul></details>`;
 }
 
@@ -198,7 +199,7 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
   button.addEventListener("click", () => handlePrompt(button.dataset.prompt));
 });
 
-addMessage("bot", "你好，我是这个项目的云端智能体。你可以询问系统架构、评估结果、检索策略、记忆模块和 EventNow。", {});
+addMessage("bot", "你好，我已连接到项目原始知识库。你可以询问 EventNow、旅行地图与文化、K-pop 和电竞图片、数据库笔记、焦虑管理资料，也可以告诉我你的偏好后继续追问。", {});
 checkApiStatus();
 loadRetrievalSummary().catch(() => {
   retrievalTable.innerHTML = '<tr><td colspan="3">评估摘要加载失败。</td></tr>';

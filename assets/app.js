@@ -109,11 +109,22 @@ function formatSources(sources = []) {
   return `<details class="sources"><summary>查看检索来源</summary><ul>${items}</ul></details>`;
 }
 
+function formatImages(sources = []) {
+  const imageSources = sources.filter((source) => source.image_url).slice(0, 4);
+  if (!imageSources.length) return "";
+  const figures = imageSources.map((source) => (
+    `<figure><a href="${escapeHtml(source.image_url)}" target="_blank" rel="noopener noreferrer">`
+    + `<img src="${escapeHtml(source.image_url)}" alt="${escapeHtml(source.source_file || "检索图片")}" loading="lazy" />`
+    + `</a><figcaption>${escapeHtml(source.source_file || "检索图片")}</figcaption></figure>`
+  )).join("");
+  return `<div class="message-images">${figures}</div>`;
+}
+
 function addMessage(role, text, options = {}) {
   const element = document.createElement("div");
   element.className = `message ${role}`;
   const label = role === "user" ? "你" : options.pending ? "智能体正在思考" : "云端智能体";
-  element.innerHTML = `<small>${label}</small><div>${escapeHtml(text).replaceAll("\n", "<br>")}</div>${formatSources(options.sources)}`;
+  element.innerHTML = `<small>${label}</small><div>${escapeHtml(text).replaceAll("\n", "<br>")}</div>${formatImages(options.sources)}${formatSources(options.sources)}`;
   messages.appendChild(element);
   messages.scrollTop = messages.scrollHeight;
   return element;

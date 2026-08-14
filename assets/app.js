@@ -131,7 +131,9 @@ async function fetchWithTimeout(url, options, timeout = 90000) {
 async function askAgent(prompt) {
   const response = await fetchWithTimeout(CHAT_API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    // text/plain is CORS-safelisted, so browsers can send the request
+    // without a separate OPTIONS preflight on sleeping free instances.
+    headers: { "Content-Type": "text/plain;charset=UTF-8" },
     body: JSON.stringify({ message: prompt, session_id: SESSION_ID }),
   });
   const data = await response.json();

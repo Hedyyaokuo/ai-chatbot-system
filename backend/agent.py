@@ -168,9 +168,16 @@ class OriginalKnowledgeIndex:
 
         scores = []
         document_count = len(self.records)
+        has_family_candidates = bool(family_hint) and any(
+            self._allowed(record, selected_tool)
+            and record.get("document_family") == family_hint
+            for record in self.records
+        )
         for index, frequencies in enumerate(self.term_frequencies):
             record = self.records[index]
             if not self._allowed(record, selected_tool):
+                continue
+            if has_family_candidates and record.get("document_family") != family_hint:
                 continue
 
             score = 0.0

@@ -1,5 +1,6 @@
 import os
 import unittest
+from pathlib import Path
 
 os.environ.pop("GROQ_API_KEY", None)
 
@@ -22,6 +23,23 @@ class ChatApiTest(unittest.TestCase):
         self.assertEqual(payload["knowledge_base"]["image_captions"], 27)
         self.assertEqual(payload["knowledge_base"]["chunk_size"], 650)
         self.assertEqual(payload["knowledge_base"]["chunk_overlap"], 100)
+
+    def test_all_image_captions_have_public_assets(self):
+        from agent import KNOWLEDGE_INDEX
+
+        image_directory = Path(__file__).resolve().parents[1] / "assets" / "knowledge-images"
+        image_records = [
+            record
+            for record in KNOWLEDGE_INDEX.records
+            if record.get("modality") == "image_caption"
+        ]
+        self.assertEqual(len(image_records), 27)
+        missing = [
+            record["source_file"]
+            for record in image_records
+            if not (image_directory / record["source_file"]).is_file()
+        ]
+        self.assertEqual(missing, [])
 
     def test_chat_returns_grounded_sources_and_trace(self):
         response = self.client.post(
@@ -74,6 +92,15 @@ class ChatApiTest(unittest.TestCase):
         self.assertEqual(payload["query_family"], "cross_modal")
         self.assertEqual(payload["selected_tool"], "image_caption_retrieval")
         self.assertTrue(any(source["modality"] == "image_caption" for source in payload["sources"]))
+        self.assertTrue(
+            all(
+                source["image_url"].startswith(
+                    "https://hedyyaokuo.github.io/ai-chatbot-system/assets/knowledge-images/"
+                )
+                for source in payload["sources"]
+                if source["modality"] == "image_caption"
+            )
+        )
         self.assertEqual(
             response.headers["Access-Control-Allow-Origin"],
             "https://hedyyaokuo.github.io",
@@ -129,6 +156,13 @@ class ChatApiTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(payload["selected_tool"], "image_caption_retrieval")
         self.assertEqual(payload["sources"][0]["source_file"], "Japan culture.jpg")
+        self.assertTrue(payload["sources"][0]["image_url"].endswith("Japan%20culture.jpg"))
+        self.assertTrue(
+            all(
+                source["document_family"] == "japan_travel"
+                for source in payload["sources"]
+            )
+        )
 
 
 if __name__ == "__main__":

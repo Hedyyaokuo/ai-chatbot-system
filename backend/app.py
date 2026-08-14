@@ -5,6 +5,7 @@ import os
 import re
 import time
 from collections import defaultdict, deque
+from urllib.parse import quote
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -24,6 +25,10 @@ allowed_origins = [
 CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
 request_times: dict[str, deque[float]] = defaultdict(deque)
+frontend_base_url = os.getenv(
+    "FRONTEND_BASE_URL",
+    "https://hedyyaokuo.github.io/ai-chatbot-system",
+).rstrip("/")
 
 
 def _rate_limited(client_id: str) -> bool:
@@ -38,10 +43,12 @@ def _rate_limited(client_id: str) -> bool:
 
 
 def _serialise_source(document: dict) -> dict:
-    return {
-        "source_file": document.get("source_file", "原始知识库"),
+    source_file = document.get("source_file", "原始知识库")
+    modality = document.get("modality", "text")
+    source = {
+        "source_file": source_file,
         "source_path": document.get("source_path", ""),
-        "modality": document.get("modality", "text"),
+        "modality": modality,
         "section": document.get("section", "general"),
         "document_family": document.get("document_family", "general"),
         "page_label": document.get("page_label", ""),
@@ -50,6 +57,11 @@ def _serialise_source(document: dict) -> dict:
         "retrieval_tool": document.get("retrieval_tool", ""),
         "content": document.get("content", "")[:500],
     }
+    if modality == "image_caption":
+        source["image_url"] = (
+            f"{frontend_base_url}/assets/knowledge-images/{quote(source_file)}"
+        )
+    return source
 
 
 def _read_payload() -> dict:

@@ -9,7 +9,7 @@ from collections import defaultdict, deque
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from agent import run_cloud_agent
+from agent import KNOWLEDGE_MANIFEST, run_cloud_agent
 
 
 app = Flask(__name__)
@@ -39,11 +39,15 @@ def _rate_limited(client_id: str) -> bool:
 
 def _serialise_source(document: dict) -> dict:
     return {
-        "source_file": document.get("title", "项目知识库"),
-        "source_path": document.get("source", ""),
+        "source_file": document.get("source_file", "原始知识库"),
+        "source_path": document.get("source_path", ""),
         "modality": document.get("modality", "text"),
         "section": document.get("section", "general"),
-        "document_family": document.get("family", "general"),
+        "document_family": document.get("document_family", "general"),
+        "page_label": document.get("page_label", ""),
+        "chunk_id": document.get("chunk_id"),
+        "retrieval_score": document.get("retrieval_score"),
+        "retrieval_tool": document.get("retrieval_tool", ""),
         "content": document.get("content", "")[:500],
     }
 
@@ -61,8 +65,16 @@ def _read_payload() -> dict:
 def health():
     return jsonify({
         "ok": True,
-        "service": "personalised-multimodal-cloud-agent",
+        "service": "yixin-original-personalised-multimodal-agent",
         "mode": "groq" if os.getenv("GROQ_API_KEY") else "extractive-fallback",
+        "knowledge_base": {
+            "records": KNOWLEDGE_MANIFEST["records"],
+            "text_chunks": KNOWLEDGE_MANIFEST["text_chunks"],
+            "image_captions": KNOWLEDGE_MANIFEST["image_captions"],
+            "source_files": KNOWLEDGE_MANIFEST["source_files"],
+            "chunk_size": KNOWLEDGE_MANIFEST["chunk_size"],
+            "chunk_overlap": KNOWLEDGE_MANIFEST["chunk_overlap"],
+        },
     })
 
 
@@ -89,7 +101,7 @@ def chat():
             "ok": True,
             "answer": result.get("answer", ""),
             "query_family": result.get("query_family", "general"),
-            "selected_tool": "cloud_knowledge_retrieval",
+            "selected_tool": result.get("selected_tool", ""),
             "verification_result": result.get("verification_result", ""),
             "trace": result.get("trace", []),
             "sources": [

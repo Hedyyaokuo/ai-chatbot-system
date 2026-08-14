@@ -1,0 +1,4 @@
+﻿method,top3_hit_rate,average_latency
+Text-only Retrieval,0.6,0.4173333333333333
+Image-only Retrieval,0.5333333333333333,1.4253333333333333
+Hybrid Retrieval,0.8,1.7093333333333334

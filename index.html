@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>个性化多模态智能体聊天系统</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span>AI</span><div><p>LangGraph + ChromaDB + Ollama</p><h1>个性化多模态智能体聊天系统</h1></div></div>
+    <nav><a href="#evaluation">Evaluation</a><a href="#chat">Chat</a><a href="#workflow">Workflow</a></nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Personalised Multimodal Agent</p>
+        <h2>展示 evaluation，并提供可连接本地 API 的聊天界面。</h2>
+        <p>GitHub Pages 负责公开展示前端；真实 LangGraph/Ollama 智能体需要本地运行 `python app.py`，或部署到公网 Python 后端。</p>
+        <div class="actions"><a class="button primary" href="#chat">开始聊天</a><a class="button" href="#evaluation">查看评估</a></div>
+      </div>
+      <aside class="panel">
+        <div><span>默认 API</span><strong>http://127.0.0.1:5000/api/chat</strong></div>
+        <div><span>检索方式</span><strong>Text / Image / Hybrid / Agentic RAG</strong></div>
+        <div><span>评估指标</span><strong>Top-3 Hit Rate + LLM-as-Judge</strong></div>
+      </aside>
+    </section>
+
+    <section class="metrics">
+      <div><strong id="bestRetrieval">--</strong><span>最佳 Top-3 Hit Rate</span></div>
+      <div><strong id="bestMethod">--</strong><span>最佳检索策略</span></div>
+      <div><strong id="judgeAverage">--</strong><span>平均质量评分</span></div>
+      <div><strong>4</strong><span>查询家族</span></div>
+    </section>
+
+    <section id="evaluation" class="section">
+      <p class="eyebrow">Evaluation</p>
+      <h2>评估结果</h2>
+      <div class="grid">
+        <article class="card wide"><h3>多模态检索 Top-3 命中率</h3><img src="assets/top3_hit_rate_comparison.png" alt="Top-3 Hit Rate 对比图" /></article>
+        <article class="card"><h3>检索摘要</h3><table><thead><tr><th>方法</th><th>命中率</th><th>延迟</th></tr></thead><tbody id="retrievalTable"></tbody></table></article>
+        <article class="card wide"><h3>查询家族质量评分</h3><img src="assets/query_family_performance.png" alt="查询家族质量评分图" /></article>
+      </div>
+    </section>
+
+    <section id="chat" class="section">
+      <p class="eyebrow">Chat Interface</p>
+      <h2>聊天界面</h2>
+      <div class="chat-layout">
+        <aside class="prompts">
+          <button data-prompt="请解释 EventNow 的组织者可以做什么">EventNow 组织者功能</button>
+          <button data-prompt="Hybrid Retrieval 为什么比 text-only 更好">Hybrid Retrieval</button>
+          <button data-prompt="记忆模块如何改善个性化追问">对话记忆</button>
+          <button data-prompt="这个系统有哪些失败案例">失败案例</button>
+        </aside>
+        <article class="chat">
+          <div id="messages" class="messages"></div>
+          <form id="chatForm"><input id="chatInput" placeholder="输入问题..." autocomplete="off" /><button>发送</button></form>
+        </article>
+      </div>
+    </section>
+
+    <section id="workflow" class="section">
+      <p class="eyebrow">Workflow</p>
+      <h2>智能体流程</h2>
+      <div class="workflow"><div>记忆读取</div><div>查询改写</div><div>路由分类</div><div>检索规划</div><div>多模态检索</div><div>答案生成</div><div>轻量验证</div></div>
+    </section>
+  </main>
+
+  <footer>公开展示版：前端可上 GitHub Pages，真实聊天能力需要本地或公网后端 API。</footer>
+  <script src="assets/app.js"></script>
+</body>
+</html>

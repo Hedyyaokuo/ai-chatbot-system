@@ -5,6 +5,59 @@
   margin-top: 12px;
 }
 
+.message.bot {
+  max-width: min(86%, 820px);
+}
+
+.message-content > :first-child {
+  margin-top: 0;
+}
+
+.message-content > :last-child {
+  margin-bottom: 0;
+}
+
+.message-content p,
+.message-content ul,
+.message-content ol,
+.message-content blockquote,
+.message-content table {
+  margin: 8px 0;
+}
+
+.message-content ul,
+.message-content ol {
+  padding-left: 22px;
+}
+
+.message-content blockquote {
+  padding-left: 12px;
+  border-left: 3px solid var(--teal);
+  color: var(--muted);
+}
+
+.message-content table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.message-content th,
+.message-content td {
+  min-width: 110px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.message-content code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #fff;
+  font-size: .92em;
+}
+
 .message-images figure {
   min-width: 0;
   margin: 0;

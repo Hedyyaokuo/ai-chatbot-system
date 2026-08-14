@@ -12,7 +12,9 @@
 - 保留文档族识别、章节提示、查询改写、路由分类、检索规划、问题分解、答案生成和验证流程。
 - 支持 EventNow 项目材料、UI 截图、旅行文化资料、K-pop 与电竞图片、数据库学习笔记和焦虑管理资料。
 - 支持每位访问者独立的短期会话记忆，并使用用户偏好改写后续问题。
+- 使用 Groq 综合多条检索证据，以自然语言重新组织回答，而不是直接拼接知识块。
 - 图像检索结果会直接显示对应图片，而不只是返回图片文件名。
+- 使用 Marked 解析 Markdown，并通过 DOMPurify 清理后再写入聊天界面。
 - 提供多模态检索 Top-3 Hit Rate 与 LLM-as-Judge 评估结果展示。
 - GitHub `main` 分支更新后，GitHub Pages 和 Render 会自动部署最新版本。
 
@@ -79,6 +81,7 @@ ai-chatbot-system/
 - `backend/original_knowledge.json.gz`：从原始 Chroma 数据库导出的 1813 个知识块。
 - `backend/export_original_knowledge.py`：重新导出原始文本块、图像描述和元数据的脚本。
 - `assets/app.js`：连接公网或本地 API，并展示聊天回答、图片和检索来源。
+- `assets/vendor/`：固定版本的 Marked 与 DOMPurify，用于安全显示模型生成的 Markdown。
 - `assets/knowledge-images/`：原个性化知识库中的 27 张图像资源。
 - `backend/test_app.py`：验证 API、CORS、文本检索、图片检索、中文查询和会话记忆。
 

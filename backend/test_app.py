@@ -24,6 +24,15 @@ class ChatApiTest(unittest.TestCase):
         self.assertEqual(payload["knowledge_base"]["chunk_size"], 650)
         self.assertEqual(payload["knowledge_base"]["chunk_overlap"], 100)
 
+    def test_generation_prompt_requires_natural_synthesis(self):
+        from agent import SYSTEM_PROMPT
+
+        self.assertIn("不是搜索结果展示器", SYSTEM_PROMPT)
+        self.assertIn("自然、连贯的中文", SYSTEM_PROMPT)
+        self.assertIn("不要逐段复制知识块", SYSTEM_PROMPT)
+        self.assertIn("不要输出 HTML", SYSTEM_PROMPT)
+        self.assertIn("心理健康专业人士", SYSTEM_PROMPT)
+
     def test_all_image_captions_have_public_assets(self):
         from agent import KNOWLEDGE_INDEX
 

@@ -99,6 +99,20 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function renderMarkdown(value) {
+  const normalised = String(value).replace(/<br\s*\/?>/gi, "\n");
+  if (!globalThis.marked?.parse || !globalThis.DOMPurify?.sanitize) {
+    return escapeHtml(normalised).replaceAll("\n", "<br>");
+  }
+  const rendered = globalThis.marked.parse(normalised, {
+    breaks: true,
+    gfm: true,
+  });
+  return globalThis.DOMPurify.sanitize(rendered, {
+    USE_PROFILES: { html: true },
+  });
+}
+
 function formatSources(sources = []) {
   if (!sources.length) return "";
   const items = sources.slice(0, 5).map((source) => {
@@ -124,7 +138,10 @@ function addMessage(role, text, options = {}) {
   const element = document.createElement("div");
   element.className = `message ${role}`;
   const label = role === "user" ? "你" : options.pending ? "智能体正在思考" : "云端智能体";
-  element.innerHTML = `<small>${label}</small><div>${escapeHtml(text).replaceAll("\n", "<br>")}</div>${formatImages(options.sources)}${formatSources(options.sources)}`;
+  const messageBody = role === "bot"
+    ? renderMarkdown(text)
+    : escapeHtml(text).replaceAll("\n", "<br>");
+  element.innerHTML = `<small>${label}</small><div class="message-content">${messageBody}</div>${formatImages(options.sources)}${formatSources(options.sources)}`;
   messages.appendChild(element);
   messages.scrollTop = messages.scrollHeight;
   return element;
